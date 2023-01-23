@@ -1,6 +1,42 @@
 # SonarQube Chart Changelog
 All changes to this chart will be documented in this file.
 
+## [7.0.2]
+* Update the list of supported kubernetes versions
+
+## [7.0.1]
+* Set a new default (maximum) allowed size of the client request body on the ingress
+
+## [7.0.0]
+* Update SonarQube to 9.8.0
+
+## [6.2.1]
+* Update the postgresql chart's repository
+
+## [6.2.0]
+* Refactor Ingress to be compatible with static compatibitly test and 1.19 minimum requirement
+
+## [6.1.2]
+* Updated SonarQube to 9.7.1
+
+## [6.1.1]
+* Refactor templating of ConfigMap for sonar.properties
+* Fix the bug where sonarSecretKey was not applied without sonar.properties set
+
+## [6.1.0]
+* Fix the installation of plugins using the standard folder `extensions/plugins` instead of `extensions/downloads` and `lib/common`
+* Remove `plugins.lib` and other small edits in the documentation
+
+## [6.0.0]
+* Updated SonarQube to 9.7.0
+
+## [5.4.1]
+* Fix the right-dash curly brace issue with the additional network policy parameter
+
+## [5.4.0]
+* Allow `tests.image` to be configured and update README accordingly.
+* Allow `tests.initContainers.image` to be configured and update README accordingly.
+
 ## [5.3.0]
 * Use the networkPolicy.prometheusNamespace value for the network policy namespace selector
 * Uncomment default value in values.yaml for backwards compatibility

@@ -10,9 +10,9 @@ Please note that this chart does NOT support SonarQube Community, Developer, and
 
 ## Compatibility
 
-| SonarQube Version | Kubernetes Version | Helm Chart Version |
-|-------------------|--------------------|--------------------|
-| latest            | 1.19, 1.20, 1.21   | 1.0                |
+Compatible SonarQube Version: `9.8.0`
+
+Supported Kubernetes Versions: From `1.23` to `1.26`
 
 ## Installing the chart
 
@@ -33,7 +33,7 @@ export JWT_SECRET=$(echo -n "your_secret" | openssl dgst -sha256 -hmac "your_key
 helm upgrade --install -n sonarqube-dce sonarqube sonarqube/sonarqube-dce --set ApplicationNodes.jwtSecret=$JWT_SECRET
 ```
 
-The above command deploys Sonarqube on the Kubernetes cluster in the default configuration in the sonarqube namespace. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+The above command deploys SonarQube on the Kubernetes cluster in the default configuration in the sonarqube namespace. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
 The default login is admin/admin.
 
@@ -111,14 +111,14 @@ spec:
 
 ## Configuration
 
-The following table lists the configurable parameters of the Sonarqube chart and their default values.
+The following table lists the configurable parameters of the SonarQube chart and their default values.
 
 ### Search Nodes Configuration
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `searchNodes.image.repository` | search image repository | `sonarqube` |
-| `searchNodes.image.tag` | search image tag | `9.2.0-datacenter-search` |
+| `searchNodes.image.tag` | search image tag | `9.8.0-datacenter-search` |
 | `searchNodes.image.pullPolicy` | search image pull policy | `IfNotPresent` |
 | `searchNodes.image.pullSecret` | (DEPRECATED) search imagePullSecret to use for private repository | `nil` |
 | `searchNodes.image.pullSecrets` | search imagePullSecrets to use for private repository | `nil` |
@@ -161,7 +161,7 @@ The following table lists the configurable parameters of the Sonarqube chart and
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `ApplicationNodes.image.repository` | app image repository | `sonarqube` |
-| `ApplicationNodes.image.tag` | app image tag | `9.2.0-datacenter-app` |
+| `ApplicationNodes.image.tag` | app image tag | `9.8.0-datacenter-app` |
 | `ApplicationNodes.image.pullPolicy` | app image pull policy | `IfNotPresent` |
 | `ApplicationNodes.image.pullSecret` | (DEPRECATED) app imagePullSecret to use for private repository | `nil` |
 | `ApplicationNodes.image.pullSecrets` | app imagePullSecrets to use for private repository | `nil` |
@@ -201,8 +201,7 @@ The following table lists the configurable parameters of the Sonarqube chart and
 | `ApplicationNodes.prometheusExporter.httpsProxy` | HTTPS proxy for downloading JMX agent | `""` |
 | `ApplicationNodes.prometheusExporter.noProxy` | No proxy for downloading JMX agent | `""` |
 | `ApplicationNodes.prometheusExporter.securityContext` | Security context for downloading the jmx agent | see `values.yaml`|
-| `ApplicationNodes.plugins.install` | List of plugins to install | `[]` |
-| `ApplicationNodes.plugins.lib` | Plugins libray | `[]` |
+| `ApplicationNodes.plugins.install` | Link(s) to the plugin JARs to download and install | `[]` |
 | `ApplicationNodes.plugins.resources` | Plugin Pod resource requests & limits | `{}` |
 | `ApplicationNodes.plugins.httpProxy` | For use behind a corporate proxy when downloading plugins | `""` |
 | `ApplicationNodes.plugins.httpsProxy` | For use behind a corporate proxy when downloading plugins | `""` |
@@ -232,7 +231,7 @@ The following table lists the configurable parameters of the Sonarqube chart and
 | `hostAliases` | Aliases for IPs in /etc/hosts | `[]` |
 | `podLabels` | Map of labels to add to the pods | `{}` |
 | `env` | Environment variables to attach to the pods | `{}`|
-| `annotations` | Sonarqube Pod annotations | `{}` |
+| `annotations` | SonarQube Pod annotations | `{}` |
 
 
 ### NetworkPolicies
@@ -281,7 +280,8 @@ The following table lists the configurable parameters of the Sonarqube chart and
 | `ingress.hosts[0].servicePort` | Optional field to override the default servicePort of a path | `None` |
 | `ingress.tls` | Ingress secrets for TLS certificates | `[]` |
 | `ingress.ingressClassName` | Optional field to configure ingress class name | `None` |
-| `ingress.annotations` | Optional field to add extra annotations to the ingress | `None` |
+| `ingress.annotations` | Field to add extra annotations to the ingress | {`nginx.ingress.kubernetes.io/proxy-body-size=64m`} |
+| `ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size` | Field to set the maximum allowed size of the client request body  | `64m` |
 
 ### InitContainers
 
@@ -320,11 +320,11 @@ The following table lists the configurable parameters of the Sonarqube chart and
 | `persistence.mounts` | Specify extra mounts. Refer to ".spec.containers.volumeMounts" specification | `[]` |
 | `emptyDir` | Configuration of resources for `emptyDir` | `{}` |
 
-### Sonarqube Specific
+### SonarQube Specific
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
-| `sonarqubeFolder` | Directory name of Sonarqube | `/opt/sonarqube` |
+| `sonarqubeFolder` | Directory name of SonarQube | `/opt/sonarqube` |
 | `monitoringPasscode` | Value for sonar.web.systemPasscode needed for LivenessProbes (encoded to Base64 format) | `define_it` |
 | `monitoringPasscodeSecretName` | Name of the secret where to load `monitoringPasscode` | `None` |
 | `monitoringPasscodeSecretKey` | Key of an existing secret containing `monitoringPasscode` | `None` |
@@ -370,10 +370,11 @@ The following table lists the configurable parameters of the Sonarqube chart and
 
 ### Tests
 
-| Parameter | Description | Default |
-| --------- | ----------- | ------- |
-| `tests.enabled` | Flag that allows tests to be excluded from generated yaml | `true` |
-| `tests.image` | Change init test container image | `dduportal/bats:0.4.0` |
+| Parameter                    | Description | Default |
+|------------------------------| ----------- |--|
+| `tests.enabled`              | Flag that allows tests to be excluded from the generated yaml | `true` |
+| `tests.image`                | Change test container image | `bitnami/minideb-extras`|
+| `tests.initContainers.image` | Change init test container image | `bats/bats:1.2.1` |
 
 ### ServiceAccount
 
@@ -429,7 +430,7 @@ In environments with air-gapped setup, especially with internal tooling (repos) 
        xxxxxxxxxxxxxxxxxxxxxxx
    ```
 
-2. Upload your `cacerts.yaml` to a secret in the cluster you are installing Sonarqube to.
+2. Upload your `cacerts.yaml` to a secret in the cluster you are installing SonarQube to.
 
    ```shell
    kubectl apply -f cacerts.yaml
@@ -461,7 +462,7 @@ For environments where another tool, such as terraform or ansible, is used to pr
 
 In such environments, configuration may be read, via environment variables, from Secrets and ConfigMaps.
 
-1. Create a `ConfigMap` (or `Secret`) containing key/value pairs, as expected by Sonarqube
+1. Create a `ConfigMap` (or `Secret`) containing key/value pairs, as expected by SonarQube.
 
    ```yaml
    apiVersion: v1

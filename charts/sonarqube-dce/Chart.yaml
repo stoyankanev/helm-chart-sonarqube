@@ -2,8 +2,8 @@ apiVersion: v2
 name: sonarqube-dce
 description: SonarQube offers Code Quality and Code Security analysis for up to 27 languages. Find Bugs, Vulnerabilities, Security Hotspots and Code Smells throughout your workflow.
 type: application
-version: 4.2.0
-appVersion: 9.6.1
+version: 6.0.2
+appVersion: 9.8.0
 keywords:
   - coverage
   - security
@@ -19,24 +19,30 @@ maintainers:
   - name: leo-geoffroy-sonarsource
     email: leo.geoffroy+helm@sonarsource.com
 annotations:
+  artifacthub.io/changes: |
+    - kind: changed
+      description: "Update SonarQube to 9.8.0"
+    - kind: fixed
+      description: "Update the postgresql chart's repository"
+    - kind: changed
+      description: "Refactor Pdb and Ingress to be compatible with static compatibility test and 1.19 minimum requirement"
+    - kind: fixed
+      description: "Fix indent in Service.yaml annotations"
   artifacthub.io/links: |
     - name: support
       url: https://community.sonarsource.com/
     - name: Chart Source
       url: https://github.com/SonarSource/helm-chart-sonarqube/tree/master/charts/sonarqube-dce
-  artifacthub.io/changes: |
-    - kind: changed
-      description: "Updated SonarQube to 9.6.1"
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/images: |
     - name: sonarqube-app
-      image: sonarqube:9.6.1-datacenter-app
+      image: sonarqube:9.8.0-datacenter-app
     - name: sonarqube-search
-      image: sonarqube:9.6.1-datacenter-search
+      image: sonarqube:9.8.0-datacenter-search
 dependencies:
   - name: postgresql
     version: 10.15.0
-    repository: https://charts.bitnami.com/bitnami
+    repository: https://raw.githubusercontent.com/bitnami/charts/pre-2022/bitnami
     condition: postgresql.enabled
   - name: ingress-nginx
     version: 4.0.13

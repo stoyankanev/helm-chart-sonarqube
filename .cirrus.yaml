@@ -1,23 +1,24 @@
-gcp_credentials: ENCRYPTED[!e5f7207bd8d02d383733bef47e18296ac32e3b7d22eb480354e8dd8fdc0004be45a8a4e72c797bd66ee94eb3340fa363!]
-
-
 only_on_none_release_draft_template: &ONLY_ON_NONE_RELEASE_DRAFT_TEMPLATE
   only_if: $CIRRUS_PRERELEASE != "true"
 
-docker_build_container_template: &GKE_CONTAINER_TEMPLATE
+docker_build_container_template: &CONTAINER_TEMPLATE
   dockerfile: .cirrus/Dockerfile
-  builder_image_project: sonarqube-team
-  builder_image_name: docker-builder-v20200915
-  cluster_name: cirrus-ci-cluster
-  zone: us-central1-a
+  docker_arguments:
+      CIRRUS_AWS_ACCOUNT: ${CIRRUS_AWS_ACCOUNT}
+  cluster_name: ${CIRRUS_CLUSTER_NAME}
+  builder_role: cirrus-builder
+  builder_image: docker-builder-v*
+  builder_instance_type: t2.small
+  builder_subnet_id: ${CIRRUS_AWS_SUBNET}
+  region: eu-central-1
   namespace: default
   cpu: 1
   memory: 1Gb
 
-container_template: &GKE_STD_CONTAINER_TEMPLATE
-  image: us.gcr.io/sonarqube-team/base:j11-latest
-  cluster_name: cirrus-ci-cluster
-  zone: us-central1-a
+container_template: &STD_CONTAINER_TEMPLATE
+  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:j11-latest
+  cluster_name: ${CIRRUS_CLUSTER_NAME}
+  region: eu-central-1
   namespace: default
   cpu: 1
   memory: 1Gb
@@ -36,8 +37,8 @@ clone_script_template: &CLONE_SCRIPT_TEMPLATE
 chart_testing_task:
   only_if: $CIRRUS_PRERELEASE != "true" && $CIRRUS_BRANCH != "master"
   timeout_in: 30m
-  gke_container:
-    <<: *GKE_CONTAINER_TEMPLATE
+  eks_container:
+    <<: *CONTAINER_TEMPLATE
     cpu: 2
     memory: 4Gb
     additional_containers:
@@ -65,8 +66,8 @@ chart_testing_task:
 chart_packaging_task:
   <<: *ONLY_ON_NONE_RELEASE_DRAFT_TEMPLATE
   timeout_in: 15m
-  gke_container:
-    <<: *GKE_CONTAINER_TEMPLATE
+  eks_container:
+    <<: *CONTAINER_TEMPLATE
     cpu: 2
     memory: 1Gb
   <<: *CLONE_SCRIPT_TEMPLATE
@@ -74,10 +75,10 @@ chart_packaging_task:
     folder: ${CIRRUS_WORKING_DIR}/*.tgz*
     fingerprint_script: echo $CIRRUS_BUILD_ID
   env:
-    GITHUB_TOKEN: ENCRYPTED[!f458126aa9ed2ac526f220c5acb51dd9cc255726b34761a56fc78d4294c11089502a882888cef0ca7dd4085e72e611a5!]
-    SONARSOURCE_SIGN_KEY: ENCRYPTED[!cc216dfe592f79db8006f2a591f8f98b40aa2b078e92025623594976fd32f6864c1e6b6ba74b50647f608e2418e6c336!]
-    SONARSOURCE_SIGN_KEY_ID: "0x7DCD4258"
-    SONARSOURCE_SIGN_KEY_PASSPHRASE: ENCRYPTED[!314a8fc344f45e462dd5e8dccd741d7562283a825e78ebca27d4ae9db8e65ce618e7f6aece386b2782a5abe5171467bd!]
+    GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-releases token]
+    SONARSOURCE_SIGN_KEY: VAULT[development/kv/data/sign data.key]
+    SONARSOURCE_SIGN_KEY_ID: VAULT[development/kv/data/sign data.key_id]
+    SONARSOURCE_SIGN_KEY_PASSPHRASE: VAULT[development/kv/data/sign data.passphrase]
   key_file:
     path: /tmp/key
     variable_name: SONARSOURCE_SIGN_KEY
@@ -94,9 +95,9 @@ chart_packaging_task:
 
 push_to_repox_task:
   <<: *ONLY_ON_NONE_RELEASE_DRAFT_TEMPLATE
-  timout_in: 15m
-  gke_container:
-    <<: *GKE_STD_CONTAINER_TEMPLATE
+  timeout_in: 15m
+  eks_container:
+    <<: *STD_CONTAINER_TEMPLATE
     cpu: 1
     memory: 1Gb
   <<: *CLONE_SCRIPT_TEMPLATE
@@ -104,9 +105,8 @@ push_to_repox_task:
     folder: ${CIRRUS_WORKING_DIR}/*.tgz*
     fingerprint_script: echo $CIRRUS_BUILD_ID
   env:
-    ARTIFACTORY_URL: https://repox.jfrog.io/artifactory/
-    ARTIFACTORY_DEPLOY_USERNAME: repox-qa-deployer-sq-ef42e7
-    ARTIFACTORY_DEPLOY_PASSWORD: ENCRYPTED[!d8838c939fe77f3b0a0510774c3b270832646e06cab8e477b35ff776933042105d211e7a0fb8ddcf826ce9f53258c519!]
+    ARTIFACTORY_URL: VAULT[development/kv/data/repox data.url]
+    ARTIFACTORY_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]
   script:
     - source cirrus-env ""
     - ./.cirrus/upload_chart.sh
@@ -115,9 +115,9 @@ push_to_repox_task:
     - chart_packaging
 
 trigger_release_task:
-  timout_in: 15m
-  gke_container:
-    <<: *GKE_STD_CONTAINER_TEMPLATE
+  timeout_in: 15m
+  eks_container:
+    <<: *STD_CONTAINER_TEMPLATE
     cpu: 1
     memory: 1Gb
   only_if: $CIRRUS_PRERELEASE != "true" && $CIRRUS_RELEASE != ""
@@ -127,11 +127,8 @@ trigger_release_task:
     folder: ${CIRRUS_WORKING_DIR}/*.tgz*
     fingerprint_script: echo $CIRRUS_BUILD_ID
   env:
-    GITHUB_TOKEN: ENCRYPTED[!f458126aa9ed2ac526f220c5acb51dd9cc255726b34761a56fc78d4294c11089502a882888cef0ca7dd4085e72e611a5!]
-    ARTIFACTORY_URL: https://repox.jfrog.io/artifactory/
-    ARTIFACTORY_DEPLOY_USERNAME: repox-qa-deployer-sq-ef42e7
-    ARTIFACTORY_DEPLOY_PASSWORD: ENCRYPTED[!d8838c939fe77f3b0a0510774c3b270832646e06cab8e477b35ff776933042105d211e7a0fb8ddcf826ce9f53258c519!]
-    SLACK_SQ_DEVOPS_WEBHOOK: ENCRYPTED[b8ae6e031a9d9045d6314ee7ad7df1cbc57e1c3860acabe2913290329ac898dd2cf5b5093962606b28b305478c99c03f]
+    GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-release token]
+    SLACK_TOKEN: VAULT[development/kv/data/slack data.token]
   gh_action_script: |
     source cirrus-env RELEASE
     CHARTS=$(find $CIRRUS_WORKING_DIR -maxdepth 1 -name "*.tgz*" -type f -exec basename "{}" ";")

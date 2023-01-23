@@ -5,7 +5,7 @@
 searchNodes:
   image:
     repository: sonarqube
-    tag: 9.6.1-datacenter-search
+    tag: 9.8.0-datacenter-search
     pullPolicy: IfNotPresent
     # If using a private repository, the imagePullSecrets to use
     # pullSecrets:
@@ -113,7 +113,7 @@ searchNodes:
 ApplicationNodes:
   image:
     repository: sonarqube
-    tag: 9.6.0-datacenter-app
+    tag: 9.8.0-datacenter-app
     pullPolicy: IfNotPresent
     # If using a private repository, the imagePullSecrets to use
     # pullSecrets:
@@ -213,9 +213,9 @@ ApplicationNodes:
   #  install:
   #    - "https://github.com/AmadeusITGroup/sonar-stash/releases/download/1.3.0/sonar-stash-plugin-1.3.0.jar"
   #    - "https://github.com/SonarSource/sonar-ldap/releases/download/2.2-RC3/sonar-ldap-plugin-2.2.0.601.jar"
+  #
   plugins:
     install: []
-    lib: []
 
     # For use behind a corporate proxy when downloading plugins
     # httpProxy: ""
@@ -300,11 +300,13 @@ ingress:
       # servicePort: somePort
       # the pathType can be one of the following values: Exact|Prefix|ImplementationSpecific(default)
       # pathType: ImplementationSpecific
-  annotations: {}
-  # kubernetes.io/ingress.class: nginx
+  annotations:
   # kubernetes.io/tls-acme: "true"
   # This property allows for reports up to a certain size to be uploaded to SonarQube
-  # nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "64m"
+
+  # Set the ingressClassName on the ingress record
+  # ingressClassName: nginx
 
 # Additional labels for Ingress manifest file
   # labels:
@@ -518,8 +520,10 @@ logging:
   jsonOutput: false
 
 tests:
+  image: bitnami/minideb-extras
+  initContainers:
+    image: bats/bats:1.2.1
   enabled: true
-  # image: bitnami/minideb-extras
 
 serviceAccount:
   create: false
